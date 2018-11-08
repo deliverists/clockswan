@@ -8,3 +8,116 @@ title: Clock Swan
 <p>Clock swan is here to help you to clock in and out with ease at the touch of a button</p>
 
 <p>More information to come soon...</p>
+
+<p>Enter your email address here if you are interested in hearing more about this service as it develops!</p>
+
+<div id="form">
+  <input id="email" name="email" type="text" placeholder="Email address"></input>
+  <button id="submit">subscribe</button>
+</div>
+
+<div id="progress"></div>
+
+<script
+  src="https://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous"></script>
+
+<script>
+var retryCount = 0;
+
+$(document).ready(function() {
+  var formEl = $("#form");
+  var emailEl = $("#email");
+  var submitEl = $("#submit");
+  var progressEl = $("#progress");
+
+  function updateProgress(info) {
+    progressEl.removeClass('err');
+    progressEl.html(info);
+  }
+
+  function updateValidation(info) {
+    progressEl.addClass('err');
+    progressEl.html(info);
+  }
+
+  function validate(emailVal) {
+    var validationMessage = null;
+
+    var re = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,6}$/;
+
+    if (!re.test(emailVal))
+      validationMessage = "Are you sure this is a valid email address?";
+    
+    if (emailVal.indexOf('@') === -1)
+      validationMessage = "Email addresses must include an @";
+
+    if (emailVal.trim().length === 0)
+      validationMessage = "Please enter your email address!";
+
+    updateValidation(validationMessage);
+    return validationMessage;
+  }
+
+  function disableForm() {
+    emailEl.attr("disabled", "disabled");
+    submitEl.attr("disabled", "disabled");
+  }
+
+  function enableForm() {
+    emailEl.removeAttr('disabled');
+    submitEl.removeAttr('disabled');
+  }
+
+  function post(emailVal) {
+    var data = {
+      site: 'www.clockswan.com',
+      email: emailVal
+    };
+
+    updateProgress('Subscribing...');
+
+    $.ajax({
+        url: 'https://x1kxr64leh.execute-api.us-east-1.amazonaws.com/latest/emails',
+        type: 'post',
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function (data) {
+          updateProgress('Yay, you are all subscribed! We will let you know when there is more information about this service.');
+          formEl.hide();
+        },
+        error: function (data) {
+          console.error('error in collecting email:', data.responseJSON)
+          retryCount++;
+          if (retryCount > 5) {
+            updateValidation('Sorry, it looks like the subscription service is down at the moment, please try again later.');
+            formEl.hide();
+          }
+          else {
+            updateProgress('Sorry, there seems to be a problem at this time.');
+            enableForm();
+          }
+        },
+        data: JSON.stringify(data)
+    });
+  }
+
+  function send() {
+    var emailVal = emailEl.val();
+
+    var validationError = validate(emailVal);
+    if (validationError) return;
+
+    disableForm();
+
+    post(emailVal);
+  }
+
+  emailEl.keypress(function(e) {
+    if(e.which === 13) send();
+  });
+
+  submitEl.click(send);
+});
+</script>
